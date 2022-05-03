@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val TAG = "MainActivity"
 
-        const val BASE_URL = "http://localhost:8080/"
+        const val BASE_URL = "http://192.168.43.226:8080/"
     }
 
     private lateinit var binding: ActivityMainBinding
@@ -39,34 +39,42 @@ class MainActivity : AppCompatActivity() {
         initJsonRpcLibrary()
 
         binding.getUserButton.setOnClickListener {
-            lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    try {
-                        val user = userApi.getUser(42)
+            loadUser(1)
+        }
 
+        binding.getUserWithErrorButton.setOnClickListener {
+            loadUser(42)
+        }
+    }
+
+    private fun loadUser(id: Int) {
+        lifecycleScope.launch {
+            withContext(Dispatchers.IO) {
+                try {
+                    val user = userApi.getUser(id)
+
+                    withContext(Dispatchers.Main) {
+                        binding.requestResponseTextView.text = user.toString()
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    if (e is JsonRpcException) {
                         withContext(Dispatchers.Main) {
-                            binding.requestResponseTextView.text = user.toString()
-                        }
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        if (e is JsonRpcException) {
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(
-                                    this@MainActivity,
-                                    "JSON-RPC error with code ${e.code} and message ${e.message}",
-                                    Toast.LENGTH_LONG
-                                ).show()
+                            Toast.makeText(
+                                this@MainActivity,
+                                "JSON-RPC error with code ${e.code} and message ${e.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
 
-                                binding.requestResponseTextView.text = e.toString()
-                            }
-                        } else {
-                            withContext(Dispatchers.Main) {
-                                Toast.makeText(
-                                    this@MainActivity,
-                                    e.message ?: e.toString(),
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
+                            binding.requestResponseTextView.text = e.toString()
+                        }
+                    } else {
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(
+                                this@MainActivity,
+                                e.message ?: e.toString(),
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     }
                 }
@@ -75,7 +83,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun initJsonRpcLibrary() {
-        val logger = HttpLoggingInterceptor.Logger { Log.d(TAG, it) }
+        val logger = HttpLoggingInterceptor.Logger { Log.d("JSON-RPC", it) }
         val loggingInterceptor =
             HttpLoggingInterceptor(logger).setLevel(HttpLoggingInterceptor.Level.BODY)
 
