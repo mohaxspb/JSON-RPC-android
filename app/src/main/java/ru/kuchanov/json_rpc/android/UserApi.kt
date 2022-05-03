@@ -5,8 +5,5 @@ import ru.kuchanov.json_rpc.library.domain.JsonRpc
 interface UserApi {
 
     @JsonRpc("user")
-    fun getUser(
-        @JsonRpc("contact") contact: String,
-        @JsonRpc("type") type: Int
-    ): User
+    fun getUser(@JsonRpc("id") id: Int): User
 }
