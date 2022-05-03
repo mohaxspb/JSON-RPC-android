@@ -12,16 +12,24 @@ data class RealInterceptorChain(
     private val index: Int = 0
 ) : JsonRpcInterceptor.Chain {
 
+    val finalInterceptors: List<JsonRpcInterceptor>
+
+    init {
+        //add interceptor, which makes network call
+        val serverCallInterceptor = ServerCallInterceptor(client)
+        finalInterceptors = interceptors.plus(serverCallInterceptor)
+    }
+
     override fun proceed(request: JsonRpcRequest): JsonRpcResponse {
         // Call the next interceptor in the chain. Last one in chain is ServerCallInterceptor.
         val nextChain = copy(index = index + 1)
-        val nextInterceptor = interceptors[index]
+        val nextInterceptor = finalInterceptors[index]
         return nextInterceptor.intercept(nextChain)
     }
 
     override fun request(): JsonRpcRequest = request
 
     override fun toString(): String {
-        return "RealInterceptorChain(index=$index, interceptors=$interceptors)"
+        return "RealInterceptorChain(index=$index, interceptors=$finalInterceptors)"
     }
 }
