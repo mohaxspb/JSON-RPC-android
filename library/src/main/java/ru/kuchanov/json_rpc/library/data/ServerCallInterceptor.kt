@@ -7,9 +7,6 @@ import ru.kuchanov.json_rpc.library.domain.protocol.JsonRpcResponse
 class ServerCallInterceptor(private val client: JsonRpcClient) : JsonRpcInterceptor {
 
     override fun intercept(chain: JsonRpcInterceptor.Chain): JsonRpcResponse {
-        println("intercept: $chain")
-        val realChain = chain as RealInterceptorChain
-        val request = realChain.request()
-        return client.call(request)
+        return client.call(chain.request())
     }
 }
