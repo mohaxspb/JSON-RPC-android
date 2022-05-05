@@ -14,6 +14,8 @@ import ru.kuchanov.json_rpc.android.databinding.ActivityMainBinding
 import ru.kuchanov.json_rpc.library.data.JsonRpcClientImpl
 import ru.kuchanov.json_rpc.library.data.createJsonRpcService
 import ru.kuchanov.json_rpc.library.domain.JsonRpcException
+import ru.kuchanov.json_rpc.library.domain.JsonRpcInterceptor
+import ru.kuchanov.json_rpc.library.domain.protocol.JsonRpcResponse
 import ru.kuchanov.json_rpc.moshi_json_parser.MoshiRequestConverter
 import ru.kuchanov.json_rpc.moshi_json_parser.MoshiResponseParser
 import ru.kuchanov.json_rpc.moshi_json_parser.MoshiResultParser
@@ -21,14 +23,13 @@ import ru.kuchanov.json_rpc.moshi_json_parser.MoshiResultParser
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        const val TAG = "MainActivity"
-
         const val BASE_URL = "http://192.168.43.226:8080/"
     }
 
     private lateinit var binding: ActivityMainBinding
 
     private lateinit var userApi: UserApi
+    private lateinit var userApiWithInterceptor: UserApi
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         initJsonRpcLibrary()
+        initJsonRpcLibraryWithInterceptor()
 
         binding.getUserButton.setOnClickListener {
             loadUser(1)
@@ -45,13 +47,17 @@ class MainActivity : AppCompatActivity() {
         binding.getUserWithErrorButton.setOnClickListener {
             loadUser(42)
         }
+
+        binding.getUserWithInterceptorButton.setOnClickListener {
+            loadUser(42, userApiWithInterceptor)
+        }
     }
 
-    private fun loadUser(id: Int) {
+    private fun loadUser(id: Int, api: UserApi = userApi) {
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 try {
-                    val user = userApi.getUser(id)
+                    val user = api.getUser(id)
 
                     withContext(Dispatchers.Main) {
                         binding.requestResponseTextView.text = user.toString()
@@ -103,6 +109,41 @@ class MainActivity : AppCompatActivity() {
             client = jsonRpcClient,
             resultParser = MoshiResultParser(),
             interceptors = listOf()
+        )
+    }
+
+    private fun initJsonRpcLibraryWithInterceptor() {
+        val logger = HttpLoggingInterceptor.Logger { Log.d("JSON-RPC", it) }
+        val loggingInterceptor =
+            HttpLoggingInterceptor(logger).setLevel(HttpLoggingInterceptor.Level.BODY)
+
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(loggingInterceptor)
+            .build()
+
+        val jsonRpcClient = JsonRpcClientImpl(
+            baseUrl = BASE_URL,
+            okHttpClient = okHttpClient,
+            requestConverter = MoshiRequestConverter(),
+            responseParser = MoshiResponseParser()
+        )
+
+        val interceptor = object : JsonRpcInterceptor {
+            override fun intercept(chain: JsonRpcInterceptor.Chain): JsonRpcResponse {
+                val initialResponse = chain.proceed(chain.request())
+                return if (initialResponse.error != null) {
+                    chain.proceed(chain.request().copy(params = mapOf("id" to 1)))
+                } else {
+                    initialResponse
+                }
+            }
+        }
+
+        userApiWithInterceptor = createJsonRpcService(
+            service = UserApi::class.java,
+            client = jsonRpcClient,
+            resultParser = MoshiResultParser(),
+            interceptors = listOf(interceptor)
         )
     }
 }

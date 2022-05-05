@@ -26,6 +26,15 @@
         app:layout_constraintStart_toEndOf="@id/getUserButton"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/getUserWithInterceptorButton"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text="USER WITH INTERCEPTOR"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/getUserButton" />
+
     <TextView
         android:id="@+id/requestResponseTextView"
         android:layout_width="match_parent"
