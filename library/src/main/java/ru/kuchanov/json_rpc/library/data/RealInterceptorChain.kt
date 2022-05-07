@@ -7,29 +7,21 @@ import ru.kuchanov.json_rpc.library.domain.protocol.JsonRpcResponse
 
 data class RealInterceptorChain(
     private val client: JsonRpcClient,
-    private val interceptors: List<JsonRpcInterceptor>,
+    val interceptors: List<JsonRpcInterceptor>,
     private val request: JsonRpcRequest,
     private val index: Int = 0
 ) : JsonRpcInterceptor.Chain {
 
-    val finalInterceptors: List<JsonRpcInterceptor>
-
-    init {
-        //add interceptor, which makes network call
-        val serverCallInterceptor = ServerCallInterceptor(client)
-        finalInterceptors = interceptors.plus(serverCallInterceptor)
-    }
-
     override fun proceed(request: JsonRpcRequest): JsonRpcResponse {
         // Call the next interceptor in the chain. Last one in chain is ServerCallInterceptor.
-        val nextChain = copy(index = index + 1)
-        val nextInterceptor = finalInterceptors[index]
+        val nextChain = copy(index = index + 1, request = request)
+        val nextInterceptor = interceptors[index]
         return nextInterceptor.intercept(nextChain)
     }
 
     override fun request(): JsonRpcRequest = request
 
     override fun toString(): String {
-        return "RealInterceptorChain(index=$index, interceptors=$finalInterceptors)"
+        return "RealInterceptorChain(index=$index, interceptors=$interceptors)"
     }
 }

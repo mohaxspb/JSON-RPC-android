@@ -70,9 +70,13 @@ private fun <T> createInvocationHandler(
 
             val request = JsonRpcRequest(id, methodName, parameters)
 
-            val chain = RealInterceptorChain(client, interceptors, request)
+            //add interceptor, which makes network call
+            val serverCallInterceptor = ServerCallInterceptor(client)
+            val finalInterceptors = interceptors.plus(serverCallInterceptor)
 
-            val response = chain.finalInterceptors.first().intercept(chain)
+            val chain = RealInterceptorChain(client, finalInterceptors, request)
+
+            val response = chain.interceptors.first().intercept(chain)
 
             val returnType: Type = if (method.genericReturnType is ParameterizedType) {
                 method.genericReturnType
