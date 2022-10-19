@@ -62,7 +62,7 @@ class MainActivity : AppCompatActivity() {
                     withContext(Dispatchers.Main) {
                         binding.requestResponseTextView.text = user.toString()
                     }
-                } catch (e: Exception) {
+                } catch (e: Throwable) {
                     e.printStackTrace()
                     if (e is JsonRpcException) {
                         withContext(Dispatchers.Main) {
